@@ -1,0 +1,3 @@
+/Users/sauliusvincevicius/Documents/Projects/Heli-Engine
+/Users/sauliusvincevicius/Documents/Projects/Terminal-Project-Manager
+/Users/sauliusvincevicius/.config/nvim

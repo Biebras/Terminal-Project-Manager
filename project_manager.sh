@@ -2,14 +2,11 @@
 
 # Variables
 script_dir=$(dirname "$0")
-projects_dir=$("$script_dir/projects.txt")
+projects_dir="$script_dir/projects.txt"
 
 # Cheack if file exists
-if [ -e "projects.txt" ]
-then
-    echo "Project file exists"
-else
-    echo "Creating projects file"
+if [ ! -e $projects_dir ]; then
+    echo "Init Project Manager!"
     touch $projects_dir
 fi
 
@@ -17,13 +14,13 @@ fi
 if [[ $# -eq 1 && $1 == "add" ]]
 then
     # Check if project exists
-    if ! grep -q "$(pwd)" projects.txt
+    if ! grep -q "$(pwd)" $projects_dir
     then
         # Add current directory
-        pwd >> $script
-        echo "Added project"
+        pwd >> $projects_dir
+        echo "Project Added!"
     else
-        echo "Project already exists"
+        echo "Can't add project already exists"
     fi
 
     exit 0
@@ -33,9 +30,9 @@ fi
 if [[ $# -eq 1 && $1 == "remove" ]]
 then
     # Add current directory
-    grep -v "$(pwd)" projects.txt > temp
-    mv temp projects.txt
-    echo "Removing project"
+    grep -v "$(pwd)" $projects_dir > temp
+    mv temp $projects_dir
+    echo "Project Removed!"
 
     exit 0
 fi
@@ -43,5 +40,37 @@ fi
 # If no arguments then list the projects
 if [[ $# -eq 0 ]]
 then
-    cat projects.txt | fzf
+    selected=`cat $projects_dir | fzf`
+    selected_name=$(basename "$selected" | tr . _)
+   
+    if [[ $selected == "q" || $selected == "quit" ]]; then
+        exit 0
+    fi
+
+    if [ -z $selected_name ]; then
+        exit 0
+    fi
+
+    # Check if tmux is running
+    if [[ -z $TMUX ]] && [[ -z $tmux_running ]]
+    then
+        # Check if session with name exists
+        if ! tmux has-session -t=$selected_name 2> /dev/null; then
+            echo "Session not found, creating a new one"
+            tmux new-session -s $selected_name -c $selected
+        else
+            echo "Session found, attaching"
+            tmux attach -t $selected_name
+        fi
+
+        exit 0
+    fi
+
+    # Check if session with name exists
+    if ! tmux has-session -t=$selected_name 2> /dev/null; then
+        echo "Session was not found, creating a session"
+        tmux new-session -ds $selected_name -c $selected
+    fi
+
+    tmux switch-client -t $selected_name
 fi
